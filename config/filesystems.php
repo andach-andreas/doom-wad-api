@@ -60,6 +60,22 @@ return [
             'report' => false,
         ],
 
+        'wads' => [
+            'driver' => 'local',
+            'root' => storage_path('wads'),
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'zips' => [
+            'driver' => 'local',
+            'root' => storage_path('zips'),
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*
