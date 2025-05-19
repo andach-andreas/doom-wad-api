@@ -4,8 +4,33 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "88970a0117c062eed55fa8728fc43833",
+    "content-hash": "b86a91f2ee7de5c57338d0ec56d521ce",
     "packages": [
+        {
+            "name": "andach/php-doom-wad-analysis",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "C:/git/andach/php-doom-wad-analysis",
+                "reference": "36d2dfcbebf07d9e91afb6afce178aeac8e95e0f"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^12.1"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Andach\\DoomWadAnalysis\\": "src/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "description": "A set of PHP classes to analyse and parse DOOM wads.",
+            "transport-options": {
+                "relative": false
+            }
+        },
         {
             "name": "brick/math",
             "version": "0.12.3",
@@ -8075,7 +8100,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "andach/php-doom-wad-analysis": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
