@@ -60,6 +60,15 @@ return [
             'report' => false,
         ],
 
+        'maps' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/maps'),
+            'url' => env('APP_URL').'/storage/maps',
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'wads' => [
             'driver' => 'local',
             'root' => storage_path('wads'),

@@ -24,6 +24,7 @@ class AnalyseWads extends Command
         $analyser = new WadAnalyser([
             'maps' => [
                 'counts' => true,
+                'images' => true,
             ],
         ]);
 
@@ -37,7 +38,6 @@ class AnalyseWads extends Command
 
             try {
                 $analysis = $analyser->analyse($fullPath);
-                dd($fullPath);
 
                 $wadDir = dirname($fullPath);
                 $textFilePath = $this->findTextFile($wadDir);
@@ -58,10 +58,17 @@ class AnalyseWads extends Command
                 $mapInserts = [];
                 foreach ($analysis['maps'] as $internalMapName => $mapArray)
                 {
+                    if (!empty($mapArray['image'])) {
+                        $imagePath = $this->storeMapImage($filePath, $internalMapName, $mapArray['image']);
+                    } else {
+                        $imagePath = null;
+                    }
+
                     $mapInserts[] = [
                         'wad_id' => $wad->id,
                         'internal_name' => $internalMapName ?? '',
                         'name' => $mapArray['name'] ?? '',
+                        'image_path' => $imagePath,
                         'count_things' => $mapArray['counts']['things'] ?? 0,
                         'count_linedefs' => $mapArray['counts']['linedefs'] ?? 0,
                         'count_sidedefs' => $mapArray['counts']['sidedefs'] ?? 0,
@@ -125,6 +132,21 @@ class AnalyseWads extends Command
         return $textFiles[0]; // fallback
     }
 
+    protected function iwadFromPath(string $textFilePath): string
+    {
+        $normalizedPath = strtolower(str_replace(['\\', '/'], '/', $textFilePath));
+
+        if (preg_match('#/(doom2)(/|$)#', $normalizedPath)) {
+            return 'doom2';
+        }
+
+        if (preg_match('#/(doom)(/|$)#', $normalizedPath)) {
+            return 'doom';
+        }
+
+        return '';
+    }
+
     protected function mergeBothArrays(array $analysis, array $textData): array
     {
         $return = $textData;
@@ -140,18 +162,14 @@ class AnalyseWads extends Command
         return $return;
     }
 
-    protected function iwadFromPath(string $textFilePath): string
+    protected function storeMapImage(string $filePath, string $internalMapName, string $imageData): string
     {
-        $normalizedPath = strtolower(str_replace(['\\', '/'], '/', $textFilePath));
+        $relativeDir = dirname($filePath); // Get directory portion only
+        $path = "{$relativeDir}/{$internalMapName}.png";
 
-        if (preg_match('#/(doom2)(/|$)#', $normalizedPath)) {
-            return 'doom2';
-        }
+        Storage::disk('maps')->put($path, $imageData);
 
-        if (preg_match('#/(doom)(/|$)#', $normalizedPath)) {
-            return 'doom';
-        }
-
-        return '';
+        return $path;
     }
+
 }
