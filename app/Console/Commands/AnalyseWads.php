@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use Andach\DoomWadAnalysis\WadFile;
+use App\Models\Map;
 use App\Models\Wad;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
@@ -50,6 +52,23 @@ class AnalyseWads extends Command
                 $insert['filename_with_extension'] = strtolower(basename($fullPath));
                 $insert['iwad'] = $this->iwadFromPath($fullPath);
                 Wad::upsert($insert, ['filename']);
+                $wad = Wad::where('filename', $insert['filename'])->first();
+
+                $mapInserts = [];
+                foreach ($analysis['maps'] as $internalMapName => $mapArray)
+                {
+                    $mapInserts[] = [
+                        'wad_id' => $wad->id,
+                        'internal_name' => $internalMapName ?? '',
+                        'name' => $mapArray['name'] ?? '',
+                        'count_things' => $mapArray['counts']['things'] ?? 0,
+                        'count_linedefs' => $mapArray['counts']['linedefs'] ?? 0,
+                        'count_sidedefs' => $mapArray['counts']['sidedefs'] ?? 0,
+                        'count_vertexes' => $mapArray['counts']['vertexes'] ?? 0,
+                        'count_sectors' => $mapArray['counts']['sectors'] ?? 0,
+                    ];
+                }
+                Map::insert($mapInserts);
 
                 $message = "$logPrefix OK";
                 $this->info($message);
@@ -69,10 +88,13 @@ class AnalyseWads extends Command
         Log::info('All WADs analysed.');
     }
 
+
     protected function getAllWadFiles(array $allFiles): array
     {
         return array_filter($allFiles, fn($file) => str_ends_with(strtolower($file), '.wad'));
     }
+
+
 
     protected function findTextFile(string $directory): ?string
     {

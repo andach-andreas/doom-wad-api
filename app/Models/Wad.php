@@ -58,4 +58,9 @@ class Wad extends Model
     protected $casts = [
         'maps' => 'array',
     ];
+
+    public function maps()
+    {
+        return $this->hasMany(Map::class);
+    }
 }

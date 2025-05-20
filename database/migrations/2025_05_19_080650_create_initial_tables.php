@@ -11,6 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('maps', function (Blueprint $table) {
+            $table->id();
+            $table->integer('wad_id');
+            $table->string('internal_name'); // e.g. E1M1, MAP01
+            $table->string('name')->nullable(); // Human-readable map name
+            $table->unsignedInteger('count_things')->default(0);
+            $table->unsignedInteger('count_linedefs')->default(0);
+            $table->unsignedInteger('count_sidedefs')->default(0);
+            $table->unsignedInteger('count_vertexes')->default(0);
+            $table->unsignedInteger('count_sectors')->default(0);
+            $table->timestamps();
+        });
+
         Schema::create('wads', function (Blueprint $table) {
             $table->id();
 
