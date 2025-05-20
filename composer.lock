@@ -4,15 +4,21 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b86a91f2ee7de5c57338d0ec56d521ce",
+    "content-hash": "a019feb874aa305f4db13cf5f3a7cbce",
     "packages": [
         {
             "name": "andach/php-doom-wad-analysis",
-            "version": "dev-main",
+            "version": "v0.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/andach-andreas/php-doom-wad-analysis.git",
+                "reference": "a30703884ffcf59ab7212b69aa5b2b63369dfac3"
+            },
             "dist": {
-                "type": "path",
-                "url": "C:/git/andach/php-doom-wad-analysis",
-                "reference": "36d2dfcbebf07d9e91afb6afce178aeac8e95e0f"
+                "type": "zip",
+                "url": "https://api.github.com/repos/andach-andreas/php-doom-wad-analysis/zipball/a30703884ffcf59ab7212b69aa5b2b63369dfac3",
+                "reference": "a30703884ffcf59ab7212b69aa5b2b63369dfac3",
+                "shasum": ""
             },
             "require-dev": {
                 "phpunit/phpunit": "^12.1"
@@ -23,13 +29,16 @@
                     "Andach\\DoomWadAnalysis\\": "src/"
                 }
             },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
             "description": "A set of PHP classes to analyse and parse DOOM wads.",
-            "transport-options": {
-                "relative": false
-            }
+            "support": {
+                "issues": "https://github.com/andach-andreas/php-doom-wad-analysis/issues",
+                "source": "https://github.com/andach-andreas/php-doom-wad-analysis/tree/v0.0.1"
+            },
+            "time": "2025-05-20T21:30:45+00:00"
         },
         {
             "name": "brick/math",
@@ -1081,16 +1090,16 @@
         },
         {
             "name": "laravel/framework",
-            "version": "v12.14.1",
+            "version": "v12.15.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "84b142958d1638a7e89de94ce75c2821c601d3d7"
+                "reference": "2ef7fb183f18e547af4eb9f5a55b2ac1011f0b77"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/84b142958d1638a7e89de94ce75c2821c601d3d7",
-                "reference": "84b142958d1638a7e89de94ce75c2821c601d3d7",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/2ef7fb183f18e547af4eb9f5a55b2ac1011f0b77",
+                "reference": "2ef7fb183f18e547af4eb9f5a55b2ac1011f0b77",
                 "shasum": ""
             },
             "require": {
@@ -1292,7 +1301,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2025-05-13T17:50:51+00:00"
+            "time": "2025-05-20T15:10:44+00:00"
         },
         {
             "name": "laravel/prompts",
@@ -8100,9 +8109,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "andach/php-doom-wad-analysis": 20
-    },
+    "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
