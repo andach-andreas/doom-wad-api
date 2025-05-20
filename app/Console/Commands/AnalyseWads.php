@@ -37,6 +37,7 @@ class AnalyseWads extends Command
 
             try {
                 $analysis = $analyser->analyse($fullPath);
+                dd($fullPath);
 
                 $wadDir = dirname($fullPath);
                 $textFilePath = $this->findTextFile($wadDir);
