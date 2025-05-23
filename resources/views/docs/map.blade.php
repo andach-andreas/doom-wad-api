@@ -27,7 +27,7 @@
             "count_sectors": 1,
             "created_at": null,
             "updated_at": null,
-            "image_url": "http://localhost:36663/storage/maps/doom/0-9/0000h1slv/E1M1.png",
+            "image_url": "{{ env('APP_URL') }}/storage/maps/doom/0-9/0000h1slv/E1M1.png",
         },
         "demos": [...]
     }
