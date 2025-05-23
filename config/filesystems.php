@@ -62,7 +62,7 @@ return [
 
         'demos' => [
             'driver' => 'local',
-            'root' => storage_path('app/public/demos'),
+            'root' => env('STORAGE_PATH_DEMOS', storage_path('app/public/demos')),
             'url' => env('APP_URL').'/storage/demos',
             'serve' => true,
             'throw' => false,
@@ -71,7 +71,7 @@ return [
 
         'maps' => [
             'driver' => 'local',
-            'root' => storage_path('app/public/maps'),
+            'root' => env('STORAGE_PATH_MAPS', storage_path('app/public/maps')),
             'url' => env('APP_URL').'/storage/maps',
             'serve' => true,
             'throw' => false,
@@ -80,7 +80,7 @@ return [
 
         'wads' => [
             'driver' => 'local',
-            'root' => storage_path('wads'),
+            'root' => env('STORAGE_PATH_WADS', storage_path('wads')),
             'serve' => true,
             'throw' => false,
             'report' => false,
@@ -88,7 +88,7 @@ return [
 
         'zips' => [
             'driver' => 'local',
-            'root' => storage_path('zips'),
+            'root' => env('STORAGE_PATH_ZIPS', storage_path('zips')),
             'serve' => true,
             'throw' => false,
             'report' => false,
