@@ -9,3 +9,4 @@ Route::get('/docs/wad', function () { return view('docs.wad'); })->name('docs.wa
 
 Route::get('/wad', [\App\Http\Controllers\WadController::class, 'index'])->name('wad.index');
 Route::get('/wad/{id}', [\App\Http\Controllers\WadController::class, 'show'])->name('wad.show');
+Route::get('/wad/{id}/update-demos', [\App\Http\Controllers\WadController::class, 'updateDemos'])->name('wad.update-demos');

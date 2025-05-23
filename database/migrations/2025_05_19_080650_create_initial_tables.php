@@ -11,6 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::create('demos', function (Blueprint $table) {
+            $table->integer('id')->primary(); // Using third-party demo ID as primary key
+            $table->string('map_id');
+            $table->integer('wad_id');
+            $table->string('category');
+            $table->string('player');
+            $table->string('engine');
+            $table->string('note')->nullable();
+            $table->string('time');
+            $table->string('lmp_url');
+            $table->string('youtube_id')->nullable();
+            $table->string('youtube_link')->nullable();
+            $table->string('comment')->nullable();
+            $table->timestamps();
+        });
+
         Schema::create('maps', function (Blueprint $table) {
             $table->id();
             $table->integer('wad_id');
@@ -28,9 +44,9 @@ return new class extends Migration
         Schema::create('wads', function (Blueprint $table) {
             $table->id();
 
-            // Additional analysis fields
             $table->string('filename');
             $table->string('filename_with_extension');
+            $table->string('idgames_path');
             $table->integer('complevel')->nullable();
             $table->integer('maps_count')->nullable();
             $table->integer('linedefs_count')->nullable();

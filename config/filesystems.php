@@ -60,6 +60,15 @@ return [
             'report' => false,
         ],
 
+        'demos' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/demos'),
+            'url' => env('APP_URL').'/storage/demos',
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'maps' => [
             'driver' => 'local',
             'root' => storage_path('app/public/maps'),

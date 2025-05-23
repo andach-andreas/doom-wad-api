@@ -29,6 +29,7 @@ class AnalyseWads extends Command
         ]);
 
         foreach ($wadFiles as $filePath) {
+            $idgamesPath = dirname($filePath);
             if (str_contains($filePath, '__MACOSX')) {
                 continue;
             }
@@ -51,6 +52,7 @@ class AnalyseWads extends Command
                 $insert = $this->mergeBothArrays($analysis, $textData);
                 $insert['filename'] = strtolower(pathinfo($fullPath, PATHINFO_FILENAME));
                 $insert['filename_with_extension'] = strtolower(basename($fullPath));
+                $insert['idgames_path'] = $idgamesPath;
                 $insert['iwad'] = $this->iwadFromPath($fullPath);
                 Wad::upsert($insert, ['filename']);
                 $wad = Wad::where('filename', $insert['filename'])->first();
