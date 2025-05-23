@@ -15,20 +15,42 @@
 {
     "status": "success",
     "data": {
-        "id": 7350,
-        "wad_id": 2869,
-        "internal_name": "E1M1",
-        "name": "",
-        "image_path": "doom/s-u/test/TEST/E1M1.png",
-        "count_things": 7,
-        "count_linedefs": 7,
-        "count_sidedefs": 7,
-        "count_vertexes": 8,
-        "count_sectors": 1,
-        "created_at": null,
-        "updated_at": null
+        "map": {
+            "id": 7350,
+            "wad_id": 2869,
+            "internal_name": "E1M1",
+            "name": "",
+            "count_things": 7,
+            "count_linedefs": 7,
+            "count_sidedefs": 7,
+            "count_vertexes": 8,
+            "count_sectors": 1,
+            "created_at": null,
+            "updated_at": null,
+            "image_url": "http://localhost:36663/storage/maps/doom/0-9/0000h1slv/E1M1.png",
+        },
+        "demos": [...]
     }
 }
+        </pre>
+
+        <p>Demos is an array with individual items like:</p>
+
+        <pre>
+{
+    "id": 77032,
+    "map_id": "2",
+    "wad_id": 2,
+    "category": "UV Max",
+    "player": "Andrea Rovenski",
+    "engine": "DSDA-Doom v0.25.6cl3",
+    "note": "",
+    "time": "0:36.26",
+    "lmp_url": "https://dsdarchive.com/files/demos/0000h1slv/77032/0000h1slv-36.zip",
+    "youtube_id": "YrEq9nT5hno",
+    "youtube_link": "https://www.youtube.com/watch?v=YrEq9nT5hno",
+    "comment": null
+},
         </pre>
     </x-andach-card>
 @endsection

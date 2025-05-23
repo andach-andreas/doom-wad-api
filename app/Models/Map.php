@@ -9,6 +9,8 @@ class Map extends Model
 {
     use HasFactory;
 
+    protected $appends = ['image_url'];
+
     protected $table = 'maps';
 
     protected $fillable = [
@@ -23,8 +25,18 @@ class Map extends Model
         'count_sectors',
     ];
 
+    public function demos()
+    {
+        return $this->hasMany(Demo::class);
+    }
+
     public function wad()
     {
         return $this->belongsTo(Wad::class);
+    }
+
+    public function getImageUrlAttribute()
+    {
+        return url('storage/maps/' . $this->attributes['image_path']);
     }
 }

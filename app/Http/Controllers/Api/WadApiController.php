@@ -21,7 +21,9 @@ class WadApiController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $wad,
+            'data' => [
+                'wad' => $wad,
+            ],
         ]);
     }
 }

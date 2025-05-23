@@ -65,6 +65,11 @@ class Wad extends Model
         'maps' => 'array',
     ];
 
+    public function demos()
+    {
+        return $this->hasMany(Demo::class);
+    }
+
     public function maps()
     {
         return $this->hasMany(Map::class);

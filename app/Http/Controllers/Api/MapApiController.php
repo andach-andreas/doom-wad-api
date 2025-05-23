@@ -22,7 +22,8 @@ class MapApiController extends Controller
 
         $map = Map::where('wad_id', $wad->id)
             ->where('internal_name', $internalName)
-            ->first();
+            ->first()
+            ->makeHidden(['image_path', 'created_at', 'updated_at']);
 
         if (!$map) {
             return response()->json([
@@ -31,9 +32,16 @@ class MapApiController extends Controller
             ], 404);
         }
 
+        $demos = $map->demos->makeHidden(['created_at', 'updated_at']);
+
+        $map->unsetRelation('demos');
+
         return response()->json([
             'status' => 'success',
-            'data' => $map,
+            'data' => [
+                'map' => $map,
+                'demos' => $demos,
+            ],
         ]);
     }
 }
