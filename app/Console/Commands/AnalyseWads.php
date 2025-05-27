@@ -24,7 +24,7 @@ class AnalyseWads extends Command
         $analyser = new WadAnalyser([
             'maps' => [
                 'counts' => true,
-                'images' => true,
+//                'images' => true,
             ],
         ]);
 
