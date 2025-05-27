@@ -55,30 +55,30 @@ class AnalyseWads extends Command
                 $insert['idgames_path'] = $idgamesPath;
                 $insert['iwad'] = $this->iwadFromPath($fullPath);
                 Wad::upsert($insert, ['filename']);
-                $wad = Wad::where('filename', $insert['filename'])->first();
-
-                $mapInserts = [];
-                foreach ($analysis['maps'] as $internalMapName => $mapArray)
-                {
-                    if (!empty($mapArray['image'])) {
-                        $imagePath = $this->storeMapImage($filePath, $internalMapName, $mapArray['image']);
-                    } else {
-                        $imagePath = null;
-                    }
-
-                    $mapInserts[] = [
-                        'wad_id' => $wad->id,
-                        'internal_name' => $internalMapName ?? '',
-                        'name' => $mapArray['name'] ?? '',
-                        'image_path' => $imagePath,
-                        'count_things' => $mapArray['counts']['things'] ?? 0,
-                        'count_linedefs' => $mapArray['counts']['linedefs'] ?? 0,
-                        'count_sidedefs' => $mapArray['counts']['sidedefs'] ?? 0,
-                        'count_vertexes' => $mapArray['counts']['vertexes'] ?? 0,
-                        'count_sectors' => $mapArray['counts']['sectors'] ?? 0,
-                    ];
-                }
-                Map::insert($mapInserts);
+//                $wad = Wad::where('filename', $insert['filename'])->first();
+//
+//                $mapInserts = [];
+//                foreach ($analysis['maps'] as $internalMapName => $mapArray)
+//                {
+//                    if (!empty($mapArray['image'])) {
+//                        $imagePath = $this->storeMapImage($filePath, $internalMapName, $mapArray['image']);
+//                    } else {
+//                        $imagePath = null;
+//                    }
+//
+//                    $mapInserts[] = [
+//                        'wad_id' => $wad->id,
+//                        'internal_name' => $internalMapName ?? '',
+//                        'name' => $mapArray['name'] ?? '',
+//                        'image_path' => $imagePath,
+//                        'count_things' => $mapArray['counts']['things'] ?? 0,
+//                        'count_linedefs' => $mapArray['counts']['linedefs'] ?? 0,
+//                        'count_sidedefs' => $mapArray['counts']['sidedefs'] ?? 0,
+//                        'count_vertexes' => $mapArray['counts']['vertexes'] ?? 0,
+//                        'count_sectors' => $mapArray['counts']['sectors'] ?? 0,
+//                    ];
+//                }
+//                Map::insert($mapInserts);
 
                 $message = "$logPrefix OK";
                 $this->info($message);
