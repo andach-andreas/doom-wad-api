@@ -58,19 +58,30 @@ class UnzipWads extends Command
 
                             $stream = $zip->getStream($entry);
                             if ($stream) {
-                                $contents = stream_get_contents($stream);
-                                fclose($stream);
-
                                 $cleanPath = $this->cleanZipEntryPath($entry);
                                 $fullPath = "$extractPath/$cleanPath";
 
                                 // Ensure parent directory exists
-                                $localPath = Storage::disk('wads')->path(dirname($fullPath));
-                                if (!is_dir($localPath)) {
-                                    mkdir($localPath, 0777, true); // Create nested folders recursively
+                                $localDir = Storage::disk('wads')->path(dirname($fullPath));
+                                if (!is_dir($localDir)) {
+                                    mkdir($localDir, 0777, true);
                                 }
 
-                                Storage::disk('wads')->put($fullPath, $contents);
+                                // Open destination file stream
+                                $localPath = Storage::disk('wads')->path($fullPath);
+                                $destStream = fopen($localPath, 'w');
+
+                                if ($destStream === false) {
+                                    fclose($stream);
+                                    $this->error("Failed to open destination file stream: $localPath");
+                                    continue; // or handle error as needed
+                                }
+
+                                // Copy stream directly from zip entry to destination file
+                                stream_copy_to_stream($stream, $destStream);
+
+                                fclose($stream);
+                                fclose($destStream);
                             }
                         }
                         $zip->close();
