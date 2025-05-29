@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use GuzzleHttp\Client;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
@@ -40,20 +41,32 @@ class DownloadWads extends Command
                 $dom->loadHTML($html);
                 $links = $dom->getElementsByTagName('a');
 
+
+                $client = new Client();
+
                 foreach ($links as $link) {
                     $href = $link->getAttribute('href');
 
                     if (preg_match('/\.zip$/i', $href)) {
                         $fileUrl = $url . $href;
                         $relativePath = "$main/$sub/$href";
+                        $fullPath = Storage::disk('zips')->path($relativePath);
 
                         if (!Storage::disk('zips')->exists($relativePath)) {
                             $this->info("Downloading $fileUrl");
-                            $contents = @file_get_contents($fileUrl);
-                            if ($contents !== false) {
-                                Storage::disk('zips')->put($relativePath, $contents);
-                            } else {
-                                $this->warn("Failed to download $fileUrl");
+
+                            // Ensure parent directory exists
+                            if (!file_exists(dirname($fullPath))) {
+                                mkdir(dirname($fullPath), 0755, true);
+                            }
+
+                            try {
+                                $client->request('GET', $fileUrl, [
+                                    'sink' => $fullPath,
+                                    'timeout' => 60,
+                                ]);
+                            } catch (\Exception $e) {
+                                $this->warn("Failed to download $fileUrl: " . $e->getMessage());
                             }
                         }
                     }
