@@ -23,6 +23,7 @@ class WadApiController extends Controller
             'status' => 'success',
             'data' => [
                 'wad' => $wad,
+                'maps' => $wad->maps,
             ],
         ]);
     }

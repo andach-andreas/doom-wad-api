@@ -61,10 +61,6 @@ class Wad extends Model
         'where_to_get_ftp',
     ];
 
-    protected $casts = [
-        'maps' => 'array',
-    ];
-
     public function demos()
     {
         return $this->hasMany(Demo::class);
