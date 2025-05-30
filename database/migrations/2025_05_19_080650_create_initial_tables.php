@@ -39,6 +39,8 @@ return new class extends Migration
             $table->unsignedInteger('count_vertexes')->default(0);
             $table->unsignedInteger('count_sectors')->default(0);
             $table->timestamps();
+
+            $table->unique(['wad_id', 'internal_name']);
         });
 
         Schema::create('wads', function (Blueprint $table) {

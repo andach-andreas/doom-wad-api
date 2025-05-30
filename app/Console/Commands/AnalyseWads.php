@@ -78,7 +78,12 @@ class AnalyseWads extends Command
                         'count_sectors' => $mapArray['counts']['sectors'] ?? 0,
                     ];
                 }
-                Map::insert($mapInserts);
+
+                Map::upsert(
+                    $mapInserts,
+                    ['wad_id', 'internal_name'],
+                    ['name', 'image_path', 'count_things', 'count_linedefs', 'count_sidedefs', 'count_vertexes', 'count_sectors']
+                );
 
                 $message = "$logPrefix OK";
                 $this->info($message);
