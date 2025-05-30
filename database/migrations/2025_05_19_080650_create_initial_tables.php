@@ -31,7 +31,7 @@ return new class extends Migration
             $table->id();
             $table->integer('wad_id');
             $table->string('internal_name'); // e.g. E1M1, MAP01
-            $table->string('name')->nullable(); // Human-readable map name
+            $table->text('name')->nullable(); // Human-readable map name
             $table->string('image_path')->nullable();
             $table->unsignedInteger('count_things')->default(0);
             $table->unsignedInteger('count_linedefs')->default(0);
