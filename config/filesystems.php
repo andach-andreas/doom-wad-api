@@ -69,6 +69,15 @@ return [
             'report' => false,
         ],
 
+        'demos_zips' => [
+            'driver' => 'local',
+            'root' => env('STORAGE_PATH_DEMOS', storage_path('app/public/demos_zips')),
+            'url' => env('APP_URL').'/storage/demos_zips',
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'maps' => [
             'driver' => 'local',
             'root' => env('STORAGE_PATH_MAPS', storage_path('app/public/maps')),

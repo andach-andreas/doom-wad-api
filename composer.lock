@@ -77,12 +77,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/andach-andreas/php-doom-wad-analysis.git",
-                "reference": "cbc7f5349ab4aebe1174a10157a2b8f16036c438"
+                "reference": "30bb3287b7872dacbc1af9ac5c122b6b168f1c2b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/andach-andreas/php-doom-wad-analysis/zipball/cbc7f5349ab4aebe1174a10157a2b8f16036c438",
-                "reference": "cbc7f5349ab4aebe1174a10157a2b8f16036c438",
+                "url": "https://api.github.com/repos/andach-andreas/php-doom-wad-analysis/zipball/30bb3287b7872dacbc1af9ac5c122b6b168f1c2b",
+                "reference": "30bb3287b7872dacbc1af9ac5c122b6b168f1c2b",
                 "shasum": ""
             },
             "require-dev": {
@@ -104,7 +104,7 @@
                 "issues": "https://github.com/andach-andreas/php-doom-wad-analysis/issues",
                 "source": "https://github.com/andach-andreas/php-doom-wad-analysis/tree/main"
             },
-            "time": "2025-05-31T21:51:09+00:00"
+            "time": "2025-05-31T22:45:29+00:00"
         },
         {
             "name": "brick/math",
