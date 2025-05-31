@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f90db620b6ae9df7796bc557e9e6d9c1",
+    "content-hash": "9328d6483d85b2c21aa4f47aef459c77",
     "packages": [
         {
             "name": "andach/laravel-view-components",
@@ -73,21 +73,22 @@
         },
         {
             "name": "andach/php-doom-wad-analysis",
-            "version": "v0.0.2",
+            "version": "dev-main",
             "source": {
                 "type": "git",
                 "url": "https://github.com/andach-andreas/php-doom-wad-analysis.git",
-                "reference": "54510b8afef9800e7ab5a882bd45d3153092bacc"
+                "reference": "cbc7f5349ab4aebe1174a10157a2b8f16036c438"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/andach-andreas/php-doom-wad-analysis/zipball/54510b8afef9800e7ab5a882bd45d3153092bacc",
-                "reference": "54510b8afef9800e7ab5a882bd45d3153092bacc",
+                "url": "https://api.github.com/repos/andach-andreas/php-doom-wad-analysis/zipball/cbc7f5349ab4aebe1174a10157a2b8f16036c438",
+                "reference": "cbc7f5349ab4aebe1174a10157a2b8f16036c438",
                 "shasum": ""
             },
             "require-dev": {
                 "phpunit/phpunit": "^12.1"
             },
+            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -101,9 +102,9 @@
             "description": "A set of PHP classes to analyse and parse DOOM wads.",
             "support": {
                 "issues": "https://github.com/andach-andreas/php-doom-wad-analysis/issues",
-                "source": "https://github.com/andach-andreas/php-doom-wad-analysis/tree/v0.0.2"
+                "source": "https://github.com/andach-andreas/php-doom-wad-analysis/tree/main"
             },
-            "time": "2025-05-30T09:53:33+00:00"
+            "time": "2025-05-31T21:51:09+00:00"
         },
         {
             "name": "brick/math",
@@ -2528,16 +2529,16 @@
         },
         {
             "name": "nikic/php-parser",
-            "version": "v5.4.0",
+            "version": "v5.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nikic/PHP-Parser.git",
-                "reference": "447a020a1f875a434d62f2a401f53b82a396e494"
+                "reference": "ae59794362fe85e051a58ad36b289443f57be7a9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/447a020a1f875a434d62f2a401f53b82a396e494",
-                "reference": "447a020a1f875a434d62f2a401f53b82a396e494",
+                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/ae59794362fe85e051a58ad36b289443f57be7a9",
+                "reference": "ae59794362fe85e051a58ad36b289443f57be7a9",
                 "shasum": ""
             },
             "require": {
@@ -2580,9 +2581,9 @@
             ],
             "support": {
                 "issues": "https://github.com/nikic/PHP-Parser/issues",
-                "source": "https://github.com/nikic/PHP-Parser/tree/v5.4.0"
+                "source": "https://github.com/nikic/PHP-Parser/tree/v5.5.0"
             },
-            "time": "2024-12-30T11:07:19+00:00"
+            "time": "2025-05-31T08:24:38+00:00"
         },
         {
             "name": "nunomaduro/termwind",
@@ -8471,13 +8472,15 @@
         }
     ],
     "aliases": [],
-    "minimum-stability": "stable",
-    "stability-flags": [],
+    "minimum-stability": "dev",
+    "stability-flags": {
+        "andach/php-doom-wad-analysis": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.2"
     },
-    "platform-dev": [],
-    "plugin-api-version": "2.2.0"
+    "platform-dev": {},
+    "plugin-api-version": "2.6.0"
 }
