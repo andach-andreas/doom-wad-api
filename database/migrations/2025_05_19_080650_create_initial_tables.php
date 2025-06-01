@@ -56,6 +56,20 @@ return new class extends Migration
             $table->unique(['wad_id', 'internal_name']);
         });
 
+        Schema::create('tics', function (Blueprint $table) {
+            $table->id();
+            $table->integer('demo_id');
+            $table->string('internal_name'); // e.g. E1M1, MAP01
+            $table->text('name')->nullable(); // Human-readable map name
+            $table->string('image_path')->nullable();
+            $table->unsignedInteger('count_things')->default(0);
+            $table->unsignedInteger('count_linedefs')->default(0);
+            $table->unsignedInteger('count_sidedefs')->default(0);
+            $table->unsignedInteger('count_vertexes')->default(0);
+            $table->unsignedInteger('count_sectors')->default(0);
+            $table->timestamps();
+        });
+
         Schema::create('wads', function (Blueprint $table) {
             $table->id();
 

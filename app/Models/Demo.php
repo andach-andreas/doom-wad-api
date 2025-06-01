@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Andach\DoomWadAnalysis\Demo as ApiDemo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -50,6 +51,24 @@ class Demo extends Model
     public function wad()
     {
         return $this->belongsTo(Wad::class);
+    }
+
+    public function analyseLmp()
+    {
+        if (!$this->lmp_file) {
+            return null;
+        }
+
+        $path = Storage::disk('demos')->path($this->lmp_file);
+
+        if (!file_exists($path)) {
+            return null;
+        }
+
+        $apiDemo = new ApiDemo($path);
+        $apiDemo->lmpStats();
+
+        $this->update($apiDemo->stats);
     }
 
     public function fetchAndExtractLmp()

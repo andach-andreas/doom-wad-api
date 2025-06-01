@@ -53,6 +53,7 @@ class DSDASync extends Command
                 $data
             );
             $demo->fetchAndExtractLmp();
+            $demo->analyseLmp();
         }
     }
 }
