@@ -35,6 +35,7 @@ class MapApiController extends Controller
         $demos = $map->demos->makeHidden(['created_at', 'updated_at']);
 
         $map->unsetRelation('demos');
+        $map->wad_filename = $map->wad->filename;
 
         return response()->json([
             'status' => 'success',
