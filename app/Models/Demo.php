@@ -128,7 +128,11 @@ class Demo extends Model
                 }
 
                 if (!$txtFound && $ext === 'txt') {
-                    $this->lmp_text_file = iconv('UTF-8', 'UTF-8//IGNORE', file_get_contents($file->getPathname()));
+                    $content = @file_get_contents($file->getPathname()) ?: '';
+                    $clean = @iconv('UTF-8', 'UTF-8//IGNORE', $content);
+
+                    $this->lmp_text_file = $clean !== false ? $clean : '';
+
                     $txtFound = true;
                 }
 
