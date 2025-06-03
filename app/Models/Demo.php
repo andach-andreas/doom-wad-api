@@ -112,9 +112,7 @@ class Demo extends Model
         $lmpFound = false;
         $txtFound = false;
 
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($extractPath)
-        );
+        $iterator = new DirectoryIterator($extractPath);
 
         foreach ($iterator as $file) {
             if ($file->isFile()) {
