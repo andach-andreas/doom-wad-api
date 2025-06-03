@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Andach\DoomWadAnalysis\Demo as ApiDemo;
+use DirectoryIterator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
