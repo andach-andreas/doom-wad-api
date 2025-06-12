@@ -12,6 +12,7 @@ class Wad extends Model
     use HasFactory;
 
     protected $fillable = [
+        'foldername',
         'filename',
         'filename_with_extension',
         'idgames_path',

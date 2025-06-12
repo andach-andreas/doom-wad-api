@@ -8,9 +8,9 @@ use Illuminate\Http\Request;
 
 class WadApiController extends Controller
 {
-    public function index(string $filename): \Illuminate\Http\JsonResponse
+    public function index(string $foldername): \Illuminate\Http\JsonResponse
     {
-        $wad = Wad::where('filename', 'like', '%' . $filename . '%')->first();
+        $wad = Wad::where('foldername', 'like', '%' . $foldername . '%')->first();
 
         if (!$wad) {
             return response()->json([

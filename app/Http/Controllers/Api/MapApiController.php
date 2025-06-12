@@ -9,9 +9,9 @@ use Illuminate\Http\Request;
 
 class MapApiController extends Controller
 {
-    public function index(Request $request, string $filename, string $internalName)
+    public function index(Request $request, string $foldername, string $internalName)
     {
-        $wad = Wad::where('filename', 'like', '%' . $filename . '%')->first();
+        $wad = Wad::where('foldername', 'like', '%' . $foldername . '%')->first();
 
         if (!$wad) {
             return response()->json([
@@ -35,7 +35,7 @@ class MapApiController extends Controller
         $demos = $map->demos->makeHidden(['created_at', 'updated_at']);
 
         $map->unsetRelation('demos');
-        $map->wad_filename = $map->wad->filename;
+        $map->wad_foldername = $map->wad->foldername;
 
         return response()->json([
             'status' => 'success',
