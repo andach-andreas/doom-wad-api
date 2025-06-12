@@ -36,7 +36,7 @@ class DSDASync extends Command
         // Optional: output confirmation
         $this->info("DSDA parsing initialized for: {$wadName}");
 
-        $wad = Wad::where('filename', $wadName)->first();
+        $wad = Wad::where('foldername', $wadName)->first();
 
         $mapCache = Map::where('wad_id', $wad->id)
             ->pluck('id', 'internal_name')
