@@ -62,7 +62,7 @@ class Wad extends Model
         'where_to_get_ftp',
     ];
 
-    public function demos()
+    public function demosLink()
     {
         return $this->hasMany(Demo::class);
     }
@@ -70,6 +70,11 @@ class Wad extends Model
     public function maps()
     {
         return $this->hasMany(Map::class);
+    }
+
+    public function getRelativePathAttribute(): string
+    {
+        return trim($this->idgames_path, '/') . '/' . ltrim($this->filename_with_extension, '/');
     }
 
     public function updateDemos(): array

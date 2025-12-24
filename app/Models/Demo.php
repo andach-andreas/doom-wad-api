@@ -150,4 +150,144 @@ class Demo extends Model
         return $this->lmp_file;
     }
 
+    /**
+     * Parses the .lmp binary demo file into an array of per-tic frame data.
+     *
+     * Each frame represents one tic (1/35th of a second) and contains input values
+     * and action flags used during that tic. Useful for TAS analysis.
+     *
+     *     forward: int,             // Forward/backward movement (-128 to 127); positive is forward
+     *     strafe: int,              // Left/right strafing (-128 to 127); positive is right
+     *     turn: int,                // Turning angle (signed byte); positive is left
+     *     fired: bool,              // Whether the fire button was pressed
+     *     used: bool,               // Whether the use/open button was pressed
+     *     weapon_change: int|null,  // Weapon number (1–8), or null if no change
+     *     is_pause: bool,           // True if tic triggered pause/unpause (special mode)
+     *     is_save: bool             // True if tic triggered game save (special mode)
+     */
+    public function parseFrames(): array
+    {
+        $binary = Storage::disk('demos')->get($this->lmp_file);
+        $frames = [];
+
+        $offset = 0;
+
+        // Minimum header size: 13 bytes (1.2+ demos)
+        $headerSize = 13;
+        $offset += $headerSize;
+
+        $length = strlen($binary);
+
+        while ($offset + 4 <= $length) {
+            $forward = unpack('c', $binary[$offset])[1];         // signed byte
+            $strafe  = unpack('c', $binary[$offset + 1])[1];     // signed byte
+            $turn    = unpack('c', $binary[$offset + 2])[1];     // signed byte (can be higher precision in Boom/MBF)
+            $action  = ord($binary[$offset + 3]);                // unsigned byte
+
+            // Interpret action bits
+            $is_special     = ($action & 0b10000000) !== 0;
+            $is_pause       = $is_special && ($action & 0b00000011) === 0b01;
+            $is_save        = $is_special && ($action & 0b00000011) === 0b10;
+            $weapon_change  = (!$is_special && ($action & 0b00000100)) ? (($action >> 3) & 0b111) + 1 : null;
+            $used           = (!$is_special && ($action & 0b00000010)) !== 0;
+            $fired          = (!$is_special && ($action & 0b00000001)) !== 0;
+
+            $frames[] = [
+                'forward'       => $forward,
+                'strafe'        => $strafe,
+                'turn'          => $turn,
+                'fired'         => $fired,
+                'used'          => $used,
+                'weapon_change' => $weapon_change,
+                'is_pause'      => $is_pause,
+                'is_save'       => $is_save,
+                'is_sr40'       => $forward !== 0 && $strafe !== 0 && $turn !== 0,
+                'is_sr50'       => $forward !== 0 && $strafe !== 0 && $turn === 0,
+            ];
+
+            // Stop parsing if the marker byte is encountered
+            if ($action === 0x80) {
+                break;
+            }
+
+            $offset += 4;
+        }
+
+        return $frames;
+    }
+
+
+    public function tasCheck(): bool
+    {
+        $frames = $this->parseFrames(); // Assumes this returns an array of frame data
+
+        return $this->tasCheckSR50Only($frames)
+            || $this->tasCheckSR50Pause($frames)
+            || $this->tasCheckPerfectTurns($frames);
+    }
+
+    public function tasCheckPerfectTurns(array $frames): bool
+    {
+        $threshold = 10; // Threshold for "too many" perfect turns, adjust as needed
+        $count = 0;
+        $tolerance = 3; // Allowable deviation from exact multiple of 45
+
+        foreach ($frames as $frame) {
+            $turn = $frame['turn'];
+
+            // Ignore zero turn frames
+            if ($turn === 0) {
+                continue;
+            }
+
+            // Check if turn is close to a multiple of 45 degrees
+            $mod = abs($turn) % 45;
+            if ($mod <= $tolerance || $mod >= (45 - $tolerance)) {
+                $count++;
+            }
+        }
+
+        return $count >= $threshold;
+    }
+
+
+    public function tasCheckSR50Only(array $frames): bool
+    {
+        $hasSr50 = false;
+
+        foreach ($frames as $frame) {
+            if ($frame['is_sr40']) {
+                // SR40 is present — not TAS
+                return false;
+            }
+
+            if ($frame['is_sr50']) {
+                $hasSr50 = true;
+            }
+        }
+
+        return $hasSr50; // True only if at least one SR50 and zero SR40
+    }
+
+    public function tasCheckSR50Pause(array $frames): bool
+    {
+        $count = count($frames);
+
+        for ($i = 0; $i < $count - 2; $i++) {
+            $first  = $frames[$i];
+            $second = $frames[$i + 1];
+            $third  = $frames[$i + 2];
+
+            if (
+                $first['is_sr50'] &&
+                $second['forward'] === 0 && $second['strafe'] === 0 &&
+                $third['is_sr50']
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 }

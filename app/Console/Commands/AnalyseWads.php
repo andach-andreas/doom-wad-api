@@ -110,8 +110,6 @@ class AnalyseWads extends Command
         return array_filter($allFiles, fn($file) => str_ends_with(strtolower($file), '.wad'));
     }
 
-
-
     protected function findTextFile(string $directory): ?string
     {
         $rii = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($directory));
