@@ -90,6 +90,7 @@ return [
         'wads' => [
             'driver' => 'local',
             'root' => env('STORAGE_PATH_WADS', storage_path('wads')),
+            'url' => env('APP_URL').'/storage/wads',
             'serve' => true,
             'throw' => false,
             'report' => false,
@@ -98,6 +99,7 @@ return [
         'zips' => [
             'driver' => 'local',
             'root' => env('STORAGE_PATH_ZIPS', storage_path('zips')),
+            'url' => env('APP_URL').'/storage/zips',
             'serve' => true,
             'throw' => false,
             'report' => false,
