@@ -16,4 +16,6 @@ Route::prefix('admin/commands')->name('admin.commands.')->group(function () {
     Route::post('/', [\App\Http\Controllers\CommandRunController::class, 'store'])->name('store');
     Route::get('/{run}', [\App\Http\Controllers\CommandRunController::class, 'show'])->name('show');
     Route::get('/{run}/output', [\App\Http\Controllers\CommandRunController::class, 'output'])->name('output');
+    Route::post('/{run}/cancel', [\App\Http\Controllers\CommandRunController::class, 'cancel'])->name('cancel');
+    Route::post('/{run}/kill', [\App\Http\Controllers\CommandRunController::class, 'kill'])->name('kill');
 });

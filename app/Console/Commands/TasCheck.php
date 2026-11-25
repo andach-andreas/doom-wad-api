@@ -13,7 +13,9 @@ class TasCheck extends Command
 
     public function handle()
     {
+        $this->info('Loading WADs and demos...');
         $wads = Wad::with('demosLink')->get();
+        $this->info("Loaded {$wads->count()} WADs.");
 
         foreach ($wads as $wad) {
             foreach ($wad->demosLink as $demo) {

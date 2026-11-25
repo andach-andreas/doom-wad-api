@@ -43,18 +43,6 @@ return [
             'after_commit' => false,
         ],
 
-        // Long-running artisan commands dispatched from the admin pages.
-        // retry_after must exceed RunArtisanCommand::$timeout (21600s), otherwise
-        // the database queue will assume a running job died and start it again.
-        'long' => [
-            'driver' => 'database',
-            'connection' => env('DB_QUEUE_CONNECTION'),
-            'table' => env('DB_QUEUE_TABLE', 'jobs'),
-            'queue' => 'long',
-            'retry_after' => 22000,
-            'after_commit' => false,
-        ],
-
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),

@@ -19,7 +19,9 @@ class AnalyseWads extends Command
     public function handle()
     {
         $disk = Storage::disk('wads');
+        $this->info('Scanning WAD directory (this can take a while)...');
         $wadFiles = $this->getAllWadFiles($disk->allFiles());
+        $this->info('Found ' . count($wadFiles) . ' WAD files.');
 
         $analyser = new WadAnalyser([
             'maps' => [

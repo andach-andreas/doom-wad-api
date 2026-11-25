@@ -11,6 +11,11 @@ class CommandRun extends Model
     public const STATUS_RUNNING = 'running';
     public const STATUS_DONE = 'done';
     public const STATUS_FAILED = 'failed';
+    public const STATUS_CANCELLING = 'cancelling';
+    public const STATUS_CANCELLED = 'cancelled';
+
+    /** Statuses that mean a run still occupies the queue. */
+    public const ACTIVE_STATUSES = [self::STATUS_QUEUED, self::STATUS_RUNNING, self::STATUS_CANCELLING];
 
     /**
      * Whitelist of commands that may be run from the web.
@@ -46,6 +51,8 @@ class CommandRun extends Model
         'arguments',
         'status',
         'exit_code',
+        'pid',
+        'queue_job_id',
         'output',
         'started_at',
         'finished_at',
@@ -62,12 +69,27 @@ class CommandRun extends Model
 
     public function scopeActive(Builder $query): Builder
     {
-        return $query->whereIn('status', [self::STATUS_QUEUED, self::STATUS_RUNNING]);
+        return $query->whereIn('status', self::ACTIVE_STATUSES);
     }
 
     public function isActive(): bool
     {
-        return in_array($this->status, [self::STATUS_QUEUED, self::STATUS_RUNNING], true);
+        return in_array($this->status, self::ACTIVE_STATUSES, true);
+    }
+
+    /**
+     * Atomically move from one status to another. Returns false if the run was
+     * no longer in $from (e.g. the worker and a Stop click raced each other).
+     */
+    public function transition(string $from, string $to, array $extra = []): bool
+    {
+        $updated = static::whereKey($this->getKey())
+            ->where('status', $from)
+            ->update(['status' => $to, 'updated_at' => now()] + $extra);
+
+        $this->refresh();
+
+        return $updated === 1;
     }
 
     public function label(): string

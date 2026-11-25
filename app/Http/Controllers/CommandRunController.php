@@ -6,6 +6,7 @@ use App\Jobs\RunArtisanCommand;
 use App\Models\CommandRun;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class CommandRunController extends Controller
@@ -78,6 +79,83 @@ class CommandRunController extends Controller
     public function show(CommandRun $run)
     {
         return view('admin.commands.show', ['run' => $run]);
+    }
+
+    /**
+     * Ask a run to stop. Queued runs are cancelled outright (the worker will skip
+     * them); running ones are flagged and abort at their next output write.
+     */
+    public function cancel(CommandRun $run)
+    {
+        if ($run->transition(CommandRun::STATUS_QUEUED, CommandRun::STATUS_CANCELLED, ['finished_at' => now()])) {
+            return back()->with('status', 'Cancelled before it started.');
+        }
+
+        if ($run->transition(CommandRun::STATUS_RUNNING, CommandRun::STATUS_CANCELLING)) {
+            return back()->with('status', 'Stop requested. It will stop the next time the command writes output. If it is hung, use Force kill.');
+        }
+
+        return back()->with('status', 'That run is not active.');
+    }
+
+    /**
+     * Last resort for a hung command: SIGKILL the queue worker process running it.
+     * Supervisor (Forge) restarts the worker automatically.
+     */
+    public function kill(CommandRun $run)
+    {
+        if (!in_array($run->status, [CommandRun::STATUS_RUNNING, CommandRun::STATUS_CANCELLING], true)) {
+            return back()->with('status', 'That run is not running, so there is nothing to kill.');
+        }
+
+        if (!$run->pid) {
+            // No worker pid recorded (e.g. a run from before pids were tracked): nothing to signal.
+            $this->markKilled($run, 'No worker process recorded for this run; marked as cancelled.');
+
+            return back()->with('status', 'No worker process was recorded for this run, so it has just been marked as cancelled.');
+        }
+
+        if (!function_exists('posix_kill')) {
+            return back()->withErrors(['kill' => 'Force kill needs the PHP posix extension (not available on this platform).']);
+        }
+
+        if (!$this->isQueueWorker($run->pid)) {
+            // The worker has already gone (or the pid was reused): just tidy up.
+            $this->markKilled($run, 'Worker process ' . $run->pid . ' no longer exists; marked as cancelled.');
+
+            return back()->with('status', 'The worker process had already exited. Run marked as cancelled.');
+        }
+
+        if (!posix_kill($run->pid, 9)) {
+            return back()->withErrors(['kill' => 'Could not kill process ' . $run->pid . ': ' . posix_strerror(posix_get_last_error())]);
+        }
+
+        $this->markKilled($run, 'Worker process ' . $run->pid . ' was force killed.');
+
+        return back()->with('status', 'Worker killed. Forge will restart it.');
+    }
+
+    private function isQueueWorker(int $pid): bool
+    {
+        $cmdline = @file_get_contents("/proc/{$pid}/cmdline");
+
+        return $cmdline !== false && str_contains($cmdline, 'queue:work');
+    }
+
+    private function markKilled(CommandRun $run, string $message): void
+    {
+        $run->update([
+            'status' => CommandRun::STATUS_CANCELLED,
+            'output' => rtrim((string) $run->output) . PHP_EOL . PHP_EOL . 'KILLED: ' . $message . PHP_EOL,
+            'finished_at' => now(),
+        ]);
+
+        // Remove the dead job's reserved row so the queue doesn't pick it up again later.
+        if ($run->queue_job_id) {
+            DB::table(config('queue.connections.database.table', 'jobs'))
+                ->where('id', $run->queue_job_id)
+                ->delete();
+        }
     }
 
     public function output(CommandRun $run)
