@@ -71,7 +71,7 @@ return [
 
         'demos_zips' => [
             'driver' => 'local',
-            'root' => env('STORAGE_PATH_DEMOS', storage_path('app/public/demos_zips')),
+            'root' => env('STORAGE_PATH_DEMOS_ZIPS', storage_path('app/public/demos_zips')),
             'url' => env('APP_URL').'/storage/demos_zips',
             'serve' => true,
             'throw' => false,

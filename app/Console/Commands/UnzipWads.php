@@ -43,11 +43,8 @@ class UnzipWads extends Command
                     }
 
                     $this->info("Extracting: $file");
-                    $tempZip = tempnam(sys_get_temp_dir(), 'wadzip');
-                    file_put_contents($tempZip, Storage::disk('zips')->get($file));
-
                     $zip = new ZipArchive();
-                    if ($zip->open($tempZip) === true) {
+                    if ($zip->open(Storage::disk('zips')->path($file)) === true) {
                         for ($i = 0; $i < $zip->numFiles; $i++) {
                             $entry = $zip->getNameIndex($i);
 
@@ -89,8 +86,6 @@ class UnzipWads extends Command
                     } else {
                         $this->warn("Failed to open zip: $file");
                     }
-
-                    @unlink($tempZip);
                 }
             }
         }

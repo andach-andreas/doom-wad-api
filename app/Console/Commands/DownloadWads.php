@@ -60,12 +60,19 @@ class DownloadWads extends Command
                                 mkdir(dirname($fullPath), 0755, true);
                             }
 
+                            // Download to a .part file and only rename once complete, so an
+                            // interrupted run (kill, timeout, network drop) never leaves a
+                            // truncated zip that later runs would treat as already downloaded.
+                            $partPath = $fullPath . '.part';
+
                             try {
                                 $client->request('GET', $fileUrl, [
-                                    'sink' => $fullPath,
-                                    'timeout' => 60,
+                                    'sink' => $partPath,
+                                    'timeout' => 300,
                                 ]);
+                                rename($partPath, $fullPath);
                             } catch (\Exception $e) {
+                                @unlink($partPath);
                                 $this->warn("Failed to download $fileUrl: " . $e->getMessage());
                             }
                         }
