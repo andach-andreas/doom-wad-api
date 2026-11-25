@@ -26,3 +26,16 @@
         </ul>
     </div>
 </nav>
+
+<nav class="mt-6">
+    <div>
+        <div>
+            <h2 class="text-ui-primary text-lg font-bold select-none">Admin</h2>
+        </div>
+        <ul class="pl-4 text-ui-secondary">
+            <li>
+                <a href="{{ route('admin.commands.index') }}" class="hover:opacity-75 ">Commands</a>
+            </li>
+        </ul>
+    </div>
+</nav>

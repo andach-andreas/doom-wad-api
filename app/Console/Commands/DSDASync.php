@@ -22,7 +22,7 @@ class DSDASync extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Pull DSDA demo records for a WAD (by folder name) and analyse their LMPs';
 
     /**
      * Execute the console command.
@@ -31,12 +31,17 @@ class DSDASync extends Command
     {
         $wadName = $this->argument('wadName');
 
+        $wad = Wad::where('foldername', $wadName)->first();
+
+        if (!$wad) {
+            $this->error("No WAD found with foldername [{$wadName}].");
+
+            return self::FAILURE;
+        }
+
         $dsda = new DSDA($wadName);
 
-        // Optional: output confirmation
         $this->info("DSDA parsing initialized for: {$wadName}");
-
-        $wad = Wad::where('foldername', $wadName)->first();
 
         $mapCache = Map::where('wad_id', $wad->id)
             ->pluck('id', 'internal_name')

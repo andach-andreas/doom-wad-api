@@ -10,3 +10,10 @@ Route::get('/docs/wad', function () { return view('docs.wad'); })->name('docs.wa
 Route::get('/wad', [\App\Http\Controllers\WadController::class, 'index'])->name('wad.index');
 Route::get('/wad/{id}', [\App\Http\Controllers\WadController::class, 'show'])->name('wad.show');
 Route::get('/wad/{id}/update-demos', [\App\Http\Controllers\WadController::class, 'updateDemos'])->name('wad.update-demos');
+
+Route::prefix('admin/commands')->name('admin.commands.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\CommandRunController::class, 'index'])->name('index');
+    Route::post('/', [\App\Http\Controllers\CommandRunController::class, 'store'])->name('store');
+    Route::get('/{run}', [\App\Http\Controllers\CommandRunController::class, 'show'])->name('show');
+    Route::get('/{run}/output', [\App\Http\Controllers\CommandRunController::class, 'output'])->name('output');
+});

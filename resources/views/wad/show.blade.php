@@ -2,7 +2,20 @@
 
 @section('content')
     <div class="container mx-auto p-4">
-        <h1 class="text-2xl font-bold mb-4">{{ $wad->title ?? $wad->filename }}</h1>
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <h1 class="text-2xl font-bold">{{ $wad->title ?? $wad->filename }}</h1>
+
+            @if ($wad->foldername)
+                <form method="POST" action="{{ route('admin.commands.store') }}">
+                    @csrf
+                    <input type="hidden" name="command" value="dsda:sync">
+                    <input type="hidden" name="argument" value="{{ $wad->foldername }}">
+                    <button type="submit" class="rounded bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+                        Sync from DSDA
+                    </button>
+                </form>
+            @endif
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
