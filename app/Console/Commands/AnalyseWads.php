@@ -6,8 +6,11 @@ use Andach\DoomWadAnalysis\WadFile;
 use App\Console\Concerns\ReportsProgress;
 use App\Models\Map;
 use App\Models\Wad;
+use App\Support\Idgames;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use ZipArchive;
 use Andach\DoomWadAnalysis\WadAnalyser;
 use Andach\DoomWadAnalysis\TextFile;
 
@@ -37,10 +40,28 @@ class AnalyseWads extends Command
             ],
         ]);
 
+        $deletedFolders = [];
+
         foreach ($wadFiles as $i => $filePath) {
             $idgamesPath = dirname($filePath);
             $fullPath = $disk->path($filePath);
             $logPrefix = sprintf('[%d/%d] %s', $i + 1, $total, $filePath);
+
+            foreach ($deletedFolders as $folder) {
+                if (str_starts_with($filePath, $folder . '/')) {
+                    continue 2; // its folder was deleted for re-extraction earlier in this run
+                }
+            }
+
+            // The parser library assumes a well-formed WAD and dies with an unpack()
+            // error on a short file, so check the structure first.
+            if ($problem = $this->wadProblem($fullPath)) {
+                if ($folder = $this->handleBadWad($filePath, $fullPath, $problem, $logPrefix)) {
+                    $deletedFolders[] = $folder;
+                }
+
+                continue;
+            }
 
             try {
                 $analysis = $analyser->analyse($fullPath);
@@ -118,6 +139,142 @@ class AnalyseWads extends Command
         return array_filter($allFiles, fn($file) => str_ends_with(strtolower($file), '.wad')
             && !str_contains($file, '__MACOSX')
             && !str_contains($file, '.__partial/')); // still being extracted by wads:unzip
+    }
+
+    /**
+     * Cheap structural check of a WAD: header type, and that the lump directory
+     * fits inside the file. Returns a description of the problem, or null if OK.
+     */
+    protected function wadProblem(string $fullPath): ?string
+    {
+        $size = @filesize($fullPath);
+
+        if ($size === false) {
+            return 'file cannot be read';
+        }
+
+        if ($size < 12) {
+            return "file is only {$size} bytes";
+        }
+
+        $handle = @fopen($fullPath, 'rb');
+
+        if (!$handle) {
+            return 'file cannot be opened: ' . (error_get_last()['message'] ?? 'unknown error');
+        }
+
+        $header = fread($handle, 12);
+        fclose($handle);
+
+        $type = substr($header, 0, 4);
+
+        if ($type !== 'IWAD' && $type !== 'PWAD') {
+            return 'not a WAD (header ' . bin2hex($type) . ')';
+        }
+
+        ['count' => $count, 'offset' => $offset] = unpack('Vcount/Voffset', $header, 4);
+        $directoryEnd = $offset + $count * 16;
+
+        if ($directoryEnd > $size) {
+            return sprintf(
+                'lump directory (%d lumps at byte %d) runs to byte %d but the file is only %d bytes',
+                $count,
+                $offset,
+                $directoryEnd,
+                $size,
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * Compare a bad WAD against its entry in the original zip. If the extracted copy
+     * is a different size it was cut short (e.g. the disk filled mid-extraction), so
+     * delete the extracted folder for wads:unzip to redo. If it matches, the upload
+     * itself is broken and there's nothing to fix.
+     *
+     * @return string|null the wads-relative folder deleted, if any
+     */
+    protected function handleBadWad(string $filePath, string $fullPath, string $problem, string $logPrefix): ?string
+    {
+        [$folder, $zipFile] = $this->extractionSource($filePath);
+        $zipPath = $zipFile ? Storage::disk('zips')->path($zipFile) : null;
+        $expected = $zipPath ? $this->zipEntrySize($zipPath, basename($filePath)) : null;
+        $actual = @filesize($fullPath);
+
+        if ($expected !== null && $expected !== $actual) {
+            File::deleteDirectory(Storage::disk('wads')->path($folder));
+            $this->warnProgress(sprintf(
+                '%s TRUNCATED (%s on disk, %s in %s): deleted %s, re-run wads:unzip then wads:analyse',
+                $logPrefix,
+                $this->humanBytes($actual),
+                $this->humanBytes($expected),
+                $zipFile,
+                $folder,
+            ));
+            $this->tally('truncated, deleted for re-extract');
+
+            return $folder;
+        }
+
+        $why = $expected === null
+            ? ($zipPath ? "couldn't compare with {$zipFile}" : 'source zip not found')
+            : 'same size as in the zip, so the original upload is broken';
+
+        $this->warnProgress("{$logPrefix} SKIPPED invalid WAD: {$problem} ({$why})");
+        $this->tally('invalid wad');
+
+        return null;
+    }
+
+    /**
+     * Map "doom/0-9/10years/sub/x.wad" to ["doom/0-9/10years", "doom/0-9/10years.zip"].
+     *
+     * @return array{0: string, 1: ?string}
+     */
+    protected function extractionSource(string $filePath): array
+    {
+        $best = null;
+
+        foreach (Idgames::directories() as $dir) {
+            if (str_starts_with($filePath, $dir . '/') && strlen($dir) > strlen($best ?? '')) {
+                $best = $dir;
+            }
+        }
+
+        if ($best === null) {
+            return [dirname($filePath), null];
+        }
+
+        $name = explode('/', substr($filePath, strlen($best) + 1))[0];
+        $zipFile = "{$best}/{$name}.zip";
+
+        return ["{$best}/{$name}", Storage::disk('zips')->exists($zipFile) ? $zipFile : null];
+    }
+
+    protected function zipEntrySize(string $zipPath, string $wadName): ?int
+    {
+        $zip = new ZipArchive();
+
+        if ($zip->open($zipPath) !== true) {
+            return null;
+        }
+
+        try {
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $stat = $zip->statIndex($i);
+                $entryName = basename(str_replace('\\', '/', $stat['name'] ?? ''));
+
+                if (strcasecmp($entryName, $wadName) === 0) {
+                    return (int) $stat['size'];
+                }
+            }
+        } finally {
+            $zip->close();
+        }
+
+        return null;
     }
 
     protected function findTextFile(string $directory): ?string
