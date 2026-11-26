@@ -102,6 +102,7 @@ class UnzipWads extends Command
         $zipPath = Storage::disk('zips')->path($file);
         $finalDir = Storage::disk('wads')->path($extractPath);
         $partialDir = $finalDir . self::PARTIAL_SUFFIX;
+        $unreadable = false;
 
         try {
             if (is_dir($partialDir)) {
@@ -110,19 +111,33 @@ class UnzipWads extends Command
 
             $zip = new ZipArchive();
             $openResult = $zip->open($zipPath);
-
-            if ($openResult !== true) {
-                throw new RuntimeException("could not open zip (ZipArchive error {$openResult}: {$this->zipErrorName($openResult)})");
-            }
-
             $skipped = [];
             $via = '';
 
-            // Early-90s PKZIP 1.x zips use Implode/Shrink/Reduce, which libzip can't
-            // decompress. Hand those whole archives to Info-ZIP unzip instead.
-            $legacyMethods = $this->unsupportedMethods($zip);
+            if ($openResult !== true) {
+                // libzip is strict about damaged archives (e.g. error 35, truncated).
+                // Info-ZIP unzip is more forgiving, so give it a go before giving up.
+                $openError = "ZipArchive error {$openResult}: {$this->zipErrorName($openResult)}";
 
-            if ($legacyMethods) {
+                if (!$this->unzipBinary) {
+                    $unreadable = true;
+
+                    throw new RuntimeException("could not open zip ({$openError})");
+                }
+
+                try {
+                    [$written, $wadCount] = $this->extractWithUnzip($zipPath, $partialDir);
+                } catch (Throwable $e) {
+                    $unreadable = true;
+
+                    throw new RuntimeException("could not open zip ({$openError}); unzip also failed: {$e->getMessage()}", 0, $e);
+                }
+
+                $via = " via unzip (ZipArchive refused it: {$openError})";
+                $this->tally('salvaged by unzip');
+            } elseif ($legacyMethods = $this->unsupportedMethods($zip)) {
+                // Early-90s PKZIP 1.x zips use Implode/Shrink/Reduce, which libzip can't
+                // decompress. Hand those whole archives to Info-ZIP unzip instead.
                 $zip->close();
                 [$written, $wadCount] = $this->extractWithUnzip($zipPath, $partialDir);
                 $via = ' via unzip (' . implode(', ', $legacyMethods) . ')';
@@ -143,7 +158,16 @@ class UnzipWads extends Command
                 File::deleteDirectory($partialDir);
             }
 
-            $this->reportFailure("{$prefix} {$file}: extraction failed", $e, ['zip' => $zipPath]);
+            // An unreadable zip is almost always a truncated download (e.g. from when
+            // the disk was full). Delete it so the next wads:download fetches it again;
+            // the downloader validates zips, so a bad copy won't be stored twice.
+            if ($unreadable && @unlink($zipPath)) {
+                $this->reportFailure("{$prefix} {$file}: corrupt zip deleted; run wads:download to fetch it again", $e, ['zip' => $zipPath]);
+                $this->tally('corrupt zips deleted');
+            } else {
+                $this->reportFailure("{$prefix} {$file}: extraction failed", $e, ['zip' => $zipPath]);
+            }
+
             $this->tally('failed');
 
             return;
@@ -320,6 +344,7 @@ class UnzipWads extends Command
             ZipArchive::ER_READ => 'read error',
             ZipArchive::ER_NOENT => 'no such file',
             ZipArchive::ER_MEMORY => 'out of memory',
+            35 => 'truncated or corrupted zip', // ER_TRUNCATED_ZIP (libzip 1.10+); not always defined in PHP
             default => 'unknown',
         };
     }
