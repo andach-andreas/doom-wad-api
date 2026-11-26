@@ -25,10 +25,10 @@ class AnalyseWads extends Command
         }
 
         $disk = Storage::disk('wads');
-        $this->progress('Scanning WAD directory (this can take a while)...');
+        $this->checkpoint('Scanning WAD directory (this can take a while)...');
         $wadFiles = array_values($this->getAllWadFiles($disk->allFiles()));
         $total = count($wadFiles);
-        $this->progress("Found {$total} WAD files.");
+        $this->checkpoint("Found {$total} WAD files.");
 
         $analyser = new WadAnalyser([
             'maps' => [

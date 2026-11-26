@@ -33,6 +33,8 @@ class DSDASync extends Command
             return self::FAILURE;
         }
 
+        $this->checkpoint("Fetching DSDA records for [{$wadName}]...");
+
         try {
             $dsda = new DSDA($wadName);
         } catch (Throwable $e) {
@@ -43,7 +45,7 @@ class DSDASync extends Command
 
         $records = $dsda->records;
         $total = count($records);
-        $this->progress("WAD #{$wad->id} {$wad->filename_with_extension}: {$total} DSDA records.");
+        $this->checkpoint("WAD #{$wad->id} {$wad->filename_with_extension}: {$total} DSDA records.");
 
         $mapCache = Map::where('wad_id', $wad->id)
             ->pluck('id', 'internal_name')
@@ -69,7 +71,8 @@ class DSDASync extends Command
                 continue;
             }
 
-            $this->progress("{$prefix} OK | {$lmp}");
+            // Each demo is a slow download, so push every line out straight away.
+            $this->checkpoint("{$prefix} OK | {$lmp}");
             $this->tally('synced');
         }
 

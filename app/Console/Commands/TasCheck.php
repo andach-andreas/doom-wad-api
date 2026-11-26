@@ -22,7 +22,7 @@ class TasCheck extends Command
         }
 
         $total = Demo::whereNotNull('wad_id')->count();
-        $this->progress("{$total} demos to check.");
+        $this->checkpoint("{$total} demos to check.");
 
         $i = 0;
 

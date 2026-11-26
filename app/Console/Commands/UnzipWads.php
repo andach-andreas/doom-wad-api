@@ -6,8 +6,10 @@ use App\Console\Concerns\ReportsProgress;
 use App\Support\Idgames;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
+use Symfony\Component\Process\ExecutableFinder;
 use Throwable;
 use ZipArchive;
 
@@ -18,6 +20,8 @@ class UnzipWads extends Command
     /** Suffix for a folder that is still being extracted. */
     private const PARTIAL_SUFFIX = '.__partial';
 
+    private ?string $unzipBinary = null;
+
     protected $signature = 'wads:unzip';
     protected $description = 'Unzip WAD zip files into appropriate directories using Laravel Storage disks';
 
@@ -27,18 +31,32 @@ class UnzipWads extends Command
             return self::FAILURE;
         }
 
+        $this->unzipBinary = (new ExecutableFinder())->find('unzip');
+
+        if ($this->unzipBinary) {
+            $this->progress("External unzip: {$this->unzipBinary} (used for legacy Implode/Shrink zips)");
+        } else {
+            $this->warnProgress('External unzip not found: legacy PKZIP 1.x zips (Implode/Shrink) will fail. Install it with: sudo apt install unzip');
+        }
+
         $zips = Storage::disk('zips');
         $wads = Storage::disk('wads');
 
         // Work out what needs doing up front so progress can show [n/total].
+        $this->checkpoint('Scanning zips to find what needs extracting...');
         $pending = [];
+        $directories = Idgames::directories();
 
-        foreach (Idgames::directories() as $dir) {
+        foreach ($directories as $d => $dir) {
+            $dirPending = count($pending);
+            $dirZips = 0;
+
             foreach ($zips->files($dir) as $file) {
                 if (!str_ends_with(strtolower($file), '.zip')) {
                     continue;
                 }
 
+                $dirZips++;
                 $extractPath = $dir . '/' . pathinfo($file, PATHINFO_FILENAME);
 
                 if ($wads->exists($extractPath)) {
@@ -49,9 +67,20 @@ class UnzipWads extends Command
 
                 $pending[] = [$file, $extractPath];
             }
+
+            if ($dirZips > 0) {
+                $this->progress(sprintf(
+                    '  [dir %d/%d] %s: %d zips, %d to extract',
+                    $d + 1,
+                    count($directories),
+                    $dir,
+                    $dirZips,
+                    count($pending) - $dirPending,
+                ));
+            }
         }
 
-        $this->progress(sprintf(
+        $this->checkpoint(sprintf(
             '%d zips already extracted, %d to extract',
             $this->tallies['already extracted'] ?? 0,
             count($pending),
@@ -86,35 +115,24 @@ class UnzipWads extends Command
                 throw new RuntimeException("could not open zip (ZipArchive error {$openResult}: {$this->zipErrorName($openResult)})");
             }
 
-            $written = 0;
-            $wadCount = 0;
             $skipped = [];
+            $via = '';
 
-            try {
-                for ($i = 0; $i < $zip->numFiles; $i++) {
-                    $entry = $zip->getNameIndex($i);
+            // Early-90s PKZIP 1.x zips use Implode/Shrink/Reduce, which libzip can't
+            // decompress. Hand those whole archives to Info-ZIP unzip instead.
+            $legacyMethods = $this->unsupportedMethods($zip);
 
-                    if ($entry === false || str_ends_with($entry, '/') || str_starts_with($entry, '__MACOSX/')) {
-                        continue;
-                    }
-
-                    $cleanPath = $this->cleanZipEntryPath($entry);
-
-                    if ($cleanPath === '') {
-                        $skipped[] = $entry;
-
-                        continue;
-                    }
-
-                    $this->writeEntry($zip, $entry, $partialDir . '/' . $cleanPath);
-                    $written++;
-
-                    if (str_ends_with(strtolower($cleanPath), '.wad')) {
-                        $wadCount++;
-                    }
-                }
-            } finally {
+            if ($legacyMethods) {
                 $zip->close();
+                [$written, $wadCount] = $this->extractWithUnzip($zipPath, $partialDir);
+                $via = ' via unzip (' . implode(', ', $legacyMethods) . ')';
+                $this->tally('legacy zips');
+            } else {
+                try {
+                    [$written, $wadCount, $skipped] = $this->extractWithZipArchive($zip, $partialDir);
+                } finally {
+                    $zip->close();
+                }
             }
 
             if (!@rename($partialDir, $finalDir)) {
@@ -132,11 +150,12 @@ class UnzipWads extends Command
         }
 
         $this->progress(sprintf(
-            '%s Extracted %s -> %d files (%d .wad)%s',
+            '%s Extracted %s -> %d files (%d .wad)%s%s',
             $prefix,
             $file,
             $written,
             $wadCount,
+            $via,
             $skipped ? ', skipped ' . count($skipped) . ' unreadable names' : '',
         ));
 
@@ -146,6 +165,104 @@ class UnzipWads extends Command
         }
 
         $this->tally('extracted');
+    }
+
+    /**
+     * Extract entry by entry with PHP's ZipArchive, cleaning up odd entry names.
+     * Returns [files written, .wad count, entry names skipped as unreadable].
+     */
+    private function extractWithZipArchive(ZipArchive $zip, string $partialDir): array
+    {
+        $written = 0;
+        $wadCount = 0;
+        $skipped = [];
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $entry = $zip->getNameIndex($i);
+
+            if ($entry === false || str_ends_with($entry, '/') || str_starts_with($entry, '__MACOSX/')) {
+                continue;
+            }
+
+            $cleanPath = $this->cleanZipEntryPath($entry);
+
+            if ($cleanPath === '') {
+                $skipped[] = $entry;
+
+                continue;
+            }
+
+            $this->writeEntry($zip, $entry, $partialDir . '/' . $cleanPath);
+            $written++;
+
+            if (str_ends_with(strtolower($cleanPath), '.wad')) {
+                $wadCount++;
+            }
+        }
+
+        return [$written, $wadCount, $skipped];
+    }
+
+    /**
+     * @return list<string> names of compression methods in this zip that libzip can't decompress
+     */
+    private function unsupportedMethods(ZipArchive $zip): array
+    {
+        $unsupported = [];
+
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $method = $zip->statIndex($i)['comp_method'] ?? ZipArchive::CM_STORE;
+
+            if (!ZipArchive::isCompressionMethodSupported($method, false)) {
+                $unsupported[$method] = $this->compressionMethodName($method);
+            }
+        }
+
+        return array_values($unsupported);
+    }
+
+    /**
+     * Extract a whole zip with Info-ZIP unzip. Returns [files written, .wad count].
+     */
+    private function extractWithUnzip(string $zipPath, string $partialDir): array
+    {
+        if (!$this->unzipBinary) {
+            throw new RuntimeException('zip uses a legacy compression method and the unzip binary is not installed (sudo apt install unzip)');
+        }
+
+        if (!is_dir($partialDir) && !@mkdir($partialDir, 0755, true) && !is_dir($partialDir)) {
+            throw new RuntimeException("could not create {$partialDir}: " . (error_get_last()['message'] ?? 'unknown error'));
+        }
+
+        // -o overwrite without prompting, -qq quiet. Exit 1 is "warnings only"
+        // (e.g. backslash path separators in old DOS zips), which is fine.
+        $result = Process::timeout(600)->run([$this->unzipBinary, '-o', '-qq', $zipPath, '-d', $partialDir]);
+
+        if (!in_array($result->exitCode(), [0, 1], true)) {
+            throw new RuntimeException(sprintf(
+                'unzip exited with code %d: %s',
+                $result->exitCode(),
+                trim($result->errorOutput() ?: $result->output()) ?: 'no output',
+            ));
+        }
+
+        File::deleteDirectory($partialDir . '/__MACOSX');
+
+        $files = File::allFiles($partialDir);
+        $wads = array_filter($files, fn ($f) => strtolower($f->getExtension()) === 'wad');
+
+        return [count($files), count($wads)];
+    }
+
+    private function compressionMethodName(int $method): string
+    {
+        return match (true) {
+            $method === 1 => 'Shrink',
+            $method >= 2 && $method <= 5 => 'Reduce',
+            $method === 6 => 'Implode',
+            $method === 9 => 'Deflate64',
+            default => "method {$method}",
+        };
     }
 
     private function writeEntry(ZipArchive $zip, string $entry, string $destination): void

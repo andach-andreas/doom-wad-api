@@ -48,7 +48,7 @@ class DownloadWads extends Command
             $zips = $this->zipLinks($html);
             $pending = array_values(array_filter($zips, fn ($href) => !$disk->exists("{$dir}/{$href}")));
 
-            $this->progress(sprintf(
+            $this->checkpoint(sprintf(
                 '%s: %d zips listed, %d already downloaded, %d to download',
                 $dirLabel,
                 count($zips),
