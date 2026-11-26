@@ -73,6 +73,15 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Progress and errors from the wads:* / dsda:* console commands.
+        'commands' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/commands.log'),
+            'level' => 'debug',
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

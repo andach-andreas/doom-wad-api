@@ -8,6 +8,7 @@ use App\Models\CommandRun;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class RunArtisanCommand implements ShouldQueue
@@ -68,9 +69,13 @@ class RunArtisanCommand implements ShouldQueue
 
             return;
         } catch (Throwable $e) {
-            $output->writeln('');
-            $output->writeln('EXCEPTION: ' . $e->getMessage());
-            $output->writeln($e->getFile() . ':' . $e->getLine());
+            // Send it to laravel.log too; previously it only ever reached the run page.
+            report($e);
+
+            $output->forceWriteln('');
+            $output->forceWriteln('EXCEPTION: ' . $e::class . ': ' . $e->getMessage());
+            $output->forceWriteln('at ' . $e->getFile() . ':' . $e->getLine());
+            $output->forceWriteln($e->getTraceAsString());
             $output->flush();
 
             $this->run->update([
@@ -103,6 +108,8 @@ class RunArtisanCommand implements ShouldQueue
      */
     public function failed(?Throwable $e): void
     {
+        Log::error("[command-run {$this->run->id}] {$this->run->command} job failed", ['exception' => $e]);
+
         $this->run->refresh();
 
         // A force-killed run is already marked cancelled; don't relabel it as failed

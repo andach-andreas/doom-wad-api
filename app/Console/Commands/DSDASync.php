@@ -3,62 +3,76 @@
 namespace App\Console\Commands;
 
 use Andach\DoomWadAnalysis\DSDA;
+use App\Console\Concerns\ReportsProgress;
 use App\Models\Demo;
 use App\Models\Map;
 use App\Models\Wad;
 use Illuminate\Console\Command;
+use Throwable;
 
 class DSDASync extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'dsda:sync {wadName}';
+    use ReportsProgress;
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
+    protected $signature = 'dsda:sync {wadName}';
     protected $description = 'Pull DSDA demo records for a WAD (by folder name) and analyse their LMPs';
 
-    /**
-     * Execute the console command.
-     */
     public function handle()
     {
         $wadName = $this->argument('wadName');
 
+        if (!$this->begin("DSDA sync: {$wadName}", ['demos', 'demos_zips'])) {
+            return self::FAILURE;
+        }
+
         $wad = Wad::where('foldername', $wadName)->first();
 
         if (!$wad) {
-            $this->error("No WAD found with foldername [{$wadName}].");
+            $this->reportFailure("No WAD found with foldername [{$wadName}].");
 
             return self::FAILURE;
         }
 
-        $dsda = new DSDA($wadName);
+        try {
+            $dsda = new DSDA($wadName);
+        } catch (Throwable $e) {
+            $this->reportFailure("Could not load DSDA records for [{$wadName}]", $e);
 
-        $this->info("DSDA parsing initialized for: {$wadName}");
+            return self::FAILURE;
+        }
+
+        $records = $dsda->records;
+        $total = count($records);
+        $this->progress("WAD #{$wad->id} {$wad->filename_with_extension}: {$total} DSDA records.");
 
         $mapCache = Map::where('wad_id', $wad->id)
             ->pluck('id', 'internal_name')
             ->toArray();
 
-        foreach ($dsda->records as $id => $data) {
-            $this->info("Parsing Demo: {$id}");
-            $data['id'] = $id;
-            $data['wad_id'] = $wad->id;
-            $data['map_id'] = $mapCache[$data['level']] ?? null;
+        $i = 0;
 
-            $demo = Demo::updateOrCreate(
-                ['id' => $id],
-                $data
-            );
-            $demo->fetchAndExtractLmp();
-            $demo->analyseLmp();
+        foreach ($records as $id => $data) {
+            $prefix = sprintf('[%d/%d] demo %s (%s)', ++$i, $total, $id, $data['level'] ?? '?');
+
+            try {
+                $data['id'] = $id;
+                $data['wad_id'] = $wad->id;
+                $data['map_id'] = $mapCache[$data['level'] ?? ''] ?? null;
+
+                $demo = Demo::updateOrCreate(['id' => $id], $data);
+                $lmp = $demo->fetchAndExtractLmp();
+                $demo->analyseLmp();
+            } catch (Throwable $e) {
+                $this->reportFailure("{$prefix}: failed", $e, ['zip_url' => $data['lmp_url_zip'] ?? null]);
+                $this->tally('failed');
+
+                continue;
+            }
+
+            $this->progress("{$prefix} OK | {$lmp}");
+            $this->tally('synced');
         }
+
+        return $this->finish();
     }
 }

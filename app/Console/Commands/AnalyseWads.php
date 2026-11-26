@@ -3,25 +3,32 @@
 namespace App\Console\Commands;
 
 use Andach\DoomWadAnalysis\WadFile;
+use App\Console\Concerns\ReportsProgress;
 use App\Models\Map;
 use App\Models\Wad;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use Andach\DoomWadAnalysis\WadAnalyser;
 use Andach\DoomWadAnalysis\TextFile;
-use Illuminate\Support\Facades\Log;
 
 class AnalyseWads extends Command
 {
+    use ReportsProgress;
+
     protected $signature = 'wads:analyse';
     protected $description = 'Run WadAnalyser on all WAD files in storage and parse associated text file';
 
     public function handle()
     {
+        if (!$this->begin('Analyse WADs', ['wads'])) {
+            return self::FAILURE;
+        }
+
         $disk = Storage::disk('wads');
-        $this->info('Scanning WAD directory (this can take a while)...');
-        $wadFiles = $this->getAllWadFiles($disk->allFiles());
-        $this->info('Found ' . count($wadFiles) . ' WAD files.');
+        $this->progress('Scanning WAD directory (this can take a while)...');
+        $wadFiles = array_values($this->getAllWadFiles($disk->allFiles()));
+        $total = count($wadFiles);
+        $this->progress("Found {$total} WAD files.");
 
         $analyser = new WadAnalyser([
             'maps' => [
@@ -30,14 +37,10 @@ class AnalyseWads extends Command
             ],
         ]);
 
-        foreach ($wadFiles as $filePath) {
+        foreach ($wadFiles as $i => $filePath) {
             $idgamesPath = dirname($filePath);
-            if (str_contains($filePath, '__MACOSX')) {
-                continue;
-            }
-
             $fullPath = $disk->path($filePath);
-            $logPrefix = "[WAD: $filePath]";
+            $logPrefix = sprintf('[%d/%d] %s', $i + 1, $total, $filePath);
 
             try {
                 $analysis = $analyser->analyse($fullPath);
@@ -57,11 +60,15 @@ class AnalyseWads extends Command
                 $insert['idgames_path'] = $idgamesPath;
                 $insert['foldername'] = basename($idgamesPath);
                 $insert['iwad'] = $this->iwadFromPath($fullPath);
-                Wad::upsert($insert, ['filename']);
-                $wad = Wad::where('filename', $insert['filename'])->first();
+                // Unique on (idgames_path, filename): one zip can hold several WADs, and
+                // the same .wad name turns up in many different zips.
+                Wad::upsert($insert, ['idgames_path', 'filename']);
+                $wad = Wad::where('idgames_path', $insert['idgames_path'])
+                    ->where('filename', $insert['filename'])
+                    ->firstOrFail();
 
                 $mapInserts = [];
-                foreach ($analysis['maps'] as $internalMapName => $mapArray)
+                foreach ($analysis['maps'] ?? [] as $internalMapName => $mapArray)
                 {
                     if (!empty($mapArray['image'])) {
                         $imagePath = $this->storeMapImage($filePath, $internalMapName, $mapArray['image']);
@@ -88,28 +95,29 @@ class AnalyseWads extends Command
                     ['name', 'image_path', 'count_things', 'count_linedefs', 'count_sidedefs', 'count_vertexes', 'count_sectors']
                 );
 
-                $message = "$logPrefix OK";
-                $this->info($message);
+                $this->progress(sprintf(
+                    '%s OK | %d maps | complevel %s | text file: %s',
+                    $logPrefix,
+                    count($mapInserts),
+                    $insert['complevel'] ?? '?',
+                    $textFilePath ? basename($textFilePath) : 'none',
+                ));
+                $this->tally('analysed');
             } catch (\Throwable $e) {
-                $error = "$logPrefix Failed: " . $e->getMessage();
-                $this->error($error);
-                Log::error("$logPrefix Failed", [
-                    'message' => $e->getMessage(),
-                    'file'    => $e->getFile(),
-                    'line'    => $e->getLine(),
-                    'trace'   => $e->getTraceAsString(),
-                ]);
+                $this->reportFailure("{$logPrefix} analysis failed", $e, ['path' => $fullPath]);
+                $this->tally('failed');
             }
         }
 
-        $this->info('All WADs analysed.');
-        Log::info('All WADs analysed.');
+        return $this->finish();
     }
 
 
     protected function getAllWadFiles(array $allFiles): array
     {
-        return array_filter($allFiles, fn($file) => str_ends_with(strtolower($file), '.wad'));
+        return array_filter($allFiles, fn($file) => str_ends_with(strtolower($file), '.wad')
+            && !str_contains($file, '__MACOSX')
+            && !str_contains($file, '.__partial/')); // still being extracted by wads:unzip
     }
 
     protected function findTextFile(string $directory): ?string
